@@ -1,5 +1,4 @@
 // Import helper functions
-// Note: We import isCdnAllowlisted still, but won't use its result for alerting.
 import { dohLookup, isIpRelatedToDohSet, isCdnAllowlisted } from './helpers.js';
 
 const MAX_ALERTS = 20; // Max number of alerts to store
@@ -17,11 +16,19 @@ chrome.webRequest.onCompleted.addListener(
  * Handles a completed web request.
  * Fetches DoH results for the domain and compares the connected IP.
  * Sends a notification if the connected IP doesn't match exactly AND
- * doesn't appear to be in a similar network range as any DoH result.
+ * doesn't appear to be in a similar network range as any DoH result,
+ * AND if monitoring is enabled.
  * @param {object} details - Details about the completed request.
  */
 async function handleRequestCompleted(details) {
-  // Basic filtering
+  // --- Check if extension monitoring is enabled ---
+  const { extensionEnabled } = await chrome.storage.local.get({ extensionEnabled: true });
+  if (!extensionEnabled) {
+    // console.debug(`[${new Date().toISOString()}] Monitoring disabled. Skipping check for ${details.url}`);
+    return;
+  }
+
+  // Basic filtering (existing code)
   if (!details.ip || !details.url.startsWith('http')) {
     return;
   }
@@ -39,7 +46,7 @@ async function handleRequestCompleted(details) {
   }
 
   const ipSeen = details.ip;
-  console.debug(`[${new Date().toISOString()}] Request Completed: Domain=${domain}, Connected IP=${ipSeen}, URL=${details.url}`);
+  console.debug(`[${new Date().toISOString()}] Request Completed (Monitoring ON): Domain=${domain}, Connected IP=${ipSeen}, URL=${details.url}`);
 
   try {
     // 1. Fetch trusted DNS results via DoH (A and AAAA)
@@ -55,14 +62,16 @@ async function handleRequestCompleted(details) {
     const isConsideredMatch = isIpRelatedToDohSet(ipSeen, dohIps);
     console.debug(`[${new Date().toISOString()}] Checking ${domain}: Is ${ipSeen} related (exact match or similar range) to DoH set? ${isConsideredMatch}`);
 
+    // isCdnAllowlisted is currently a stub, so its result is not primarily used for alerting logic here.
+    // const allowlistedByDomain = isCdnAllowlisted(ipSeen, domain);
+
     // 3. Trigger notification ONLY IF no relationship was found
-    if (!isConsideredMatch) {
+    if (!isConsideredMatch) { // Note: isCdnAllowlisted is effectively ignored for alert logic due to range check taking precedence
       const notificationId = `dns-alert-${domain}-${ipSeen}-${Date.now()}`;
       const dohIpList = [...dohIps].join(', ') || 'None';
       const message = `Browser connected to ${ipSeen}, but trusted DNS (DoH) resolved to: ${dohIpList}. This might indicate DNS interference.`;
       const title = `DNS Alert: ${domain}`;
 
-      // Log detailed alert info to console
       console.warn(`[${new Date().toISOString()}] ALERT Triggered for ${domain}! (IP not in DoH set or similar range)`, {
           connectedIp: ipSeen,
           dohIpSet: dohIps,
@@ -70,7 +79,6 @@ async function handleRequestCompleted(details) {
           url: details.url
       });
 
-      // Create a Chrome notification
       chrome.notifications.create(notificationId, {
         type: 'basic',
         iconUrl: 'icons/icon48.png',
@@ -79,7 +87,6 @@ async function handleRequestCompleted(details) {
         priority: 2
       });
 
-      // Store the alert for the popup
       await storeAlert({
         timestamp: new Date().toISOString(),
         domain: domain,
@@ -88,7 +95,6 @@ async function handleRequestCompleted(details) {
         url: details.url,
       });
     } else {
-        // Log why no alert was triggered
        console.debug(`[${new Date().toISOString()}] OK for ${domain}: Connected IP ${ipSeen} matches or is related to DoH set.`);
     }
 
@@ -97,10 +103,7 @@ async function handleRequestCompleted(details) {
   }
 }
 
-/**
- * Stores a new alert in chrome.storage.local, keeping only the most recent ones.
- * @param {object} alertData - The alert data to store.
- */
+// ... (rest of storeAlert and onStartup listener) ...
 async function storeAlert(alertData) {
   try {
     const result = await chrome.storage.local.get({ dnsAlerts: [] });
@@ -115,7 +118,6 @@ async function storeAlert(alertData) {
   }
 }
 
-// Optional: Clear badge on startup
 chrome.runtime.onStartup.addListener(() => {
   chrome.action.setBadgeText({ text: '' });
 });

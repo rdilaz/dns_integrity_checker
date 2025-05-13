@@ -1,0 +1,10 @@
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = www.facebook.com
+DNS.2 = facebook.com
+DNS.3 = login.facebook.com
+# Add any other facebook subdomains you might hit, like m.facebook.com
