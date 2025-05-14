@@ -1,33 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Log in to NotFacebook</title>
     <style>
-        body { font-family: Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; text-align: center; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, .1), 0 8px 16px rgba(0, 0, 0, .1); width: 396px; }
-        .logo { font-size: 48px; font-weight: bold; color: #0866FF; /* A blue, maybe FB-like */ margin-bottom: 10px; }
-        .subtitle { font-size: 20px; color: #1c1e21; margin-bottom: 20px; line-height: 28px; }
-        input[type="text"], input[type="password"] { width: calc(100% - 22px); padding: 14px 10px; margin-bottom: 12px; border: 1px solid #dddfe2; border-radius: 6px; font-size: 17px; }
-        .login-button { width: 100%; padding: 12px 0; background-color: #1877f2; /* FB blue */ color: white; border: none; border-radius: 6px; font-size: 20px; font-weight: bold; cursor: pointer; margin-bottom: 16px; }
-        .login-button:hover { background-color: #166fe5; }
-        .warning { margin-top: 20px; padding: 15px; background-color: #ffe0b2; border: 1px solid #ffb74d; color: #e65100; border-radius: 4px; font-weight: bold; font-size: 13px; }
+      /* Page body */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f2f5; /* Facebook-like gray */
+        text-align: center;
+        padding-top: 100px;
+      }
+      /* Login container */
+      .container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        width: 400px;
+        margin: 0 auto;
+      }
+      /* Logo text */
+      .logo {
+        font-size: 48px;
+        font-weight: bold;
+        color: blue;
+        margin-bottom: 10px;
+      }
+      /* Subtitle */
+      .subtitle {
+        font-size: 20px;
+        margin-bottom: 20px;
+      }
+      /* Form inputs */
+      input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+      /* Login button */
+      .login-button {
+        width: 100%;
+        padding: 10px;
+        background-color: blue;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-bottom: 15px;
+      }
+      .login-button:hover {
+        background-color: darkblue;
+      }
+      /* Warning message */
+      .warning {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #ffe0b2;
+        border: 1px solid orange;
+        color: red;
+        border-radius: 4px;
+        font-weight: bold;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <!-- Login form container -->
     <div class="container">
-        <div class="logo">notfacebook</div>
-        <div class="subtitle">Connect with phantoms and the world around you on NotFacebook. (This is a FAKE page)</div>
-        <form onsubmit="alert('Credentials NOT submitted! This is a demo for DNS spoofing detection.'); return false;">
-            <input type="text" placeholder="Email address or phone number (Fake)" required>
-            <input type="password" placeholder="Password (Fake)" required>
-            <button type="submit" class="login-button">Log In (Demo)</button>
-        </form>
-        <div class="warning">
-            ⚠️ This is a FAKE Facebook login page for demonstration purposes. <br>
-            Do NOT enter real credentials.
-        </div>
+      <!-- Logo -->
+      <div class="logo">notfacebook</div>
+      <!-- Demo notice -->
+      <div class="subtitle">This is a FAKE page for demonstration</div>
+      <!-- Form that shows alert instead of submitting -->
+      <form onsubmit="alert('This is just a demo!'); return false;">
+        <!-- Email field -->
+        <input
+          type="text"
+          placeholder="Email address or phone number (Fake)"
+          required
+        />
+        <!-- Password field -->
+        <input type="password" placeholder="Password (Fake)" required />
+        <button type="submit" class="login-button">Log In (Demo)</button>
+      </form>
+      <!-- Warning notice -->
+      <div class="warning">
+        ⚠️ WARNING: This is a FAKE page for demonstration. <br />
+        Do NOT enter real information!
+      </div>
     </div>
-</body>
+  </body>
 </html>

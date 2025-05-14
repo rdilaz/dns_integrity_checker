@@ -1,92 +1,119 @@
-// Import helper functions
-import { dohLookup, isIpRelatedToDohSet, isCdnAllowlisted } from './helpers.js';
+// Import helper functions from helpers.js for DNS lookups and IP comparisons
+import { dohLookup, isIpRelatedToDohSet, isCdnAllowlisted } from "./helpers.js";
 
-const MAX_ALERTS = 20; // Max number of alerts to store
+// Limits the number of recent alerts stored in local storage
+const MAX_ALERTS = 20;
 
-// --- Main Listener ---
-chrome.webRequest.onCompleted.addListener(
-  handleRequestCompleted,
-  {
-    urls: ["<all_urls>"],
-    types: ["main_frame", "sub_frame"]
-  }
-);
+// Register the extension to listen for all completed web requests
+// This is the main entry point when a web page finishes loading
+chrome.webRequest.onCompleted.addListener(handleRequestCompleted, {
+  urls: ["<all_urls>"], // Listen to all URLs
+  types: ["main_frame", "sub_frame"], // Only check main pages and frames, not resources
+});
 
-/**
- * Handles a completed web request.
- * Fetches DoH results for the domain and compares the connected IP.
- * Sends a notification if the connected IP doesn't match exactly AND
- * doesn't appear to be in a similar network range as any DoH result,
- * AND if monitoring is enabled.
- * @param {object} details - Details about the completed request.
- */
+// This function handles completed web requests
+// It checks if the IP we connected to matches what the DoH says it should be
+// and sends an alert if they don't match
 async function handleRequestCompleted(details) {
-  // --- Check if extension monitoring is enabled ---
-  const { extensionEnabled } = await chrome.storage.local.get({ extensionEnabled: true });
+  // Check if extension is enabled in storage (defaults to true if not set)
+  const { extensionEnabled } = await chrome.storage.local.get({
+    extensionEnabled: true,
+  });
   if (!extensionEnabled) {
-    // console.debug(`[${new Date().toISOString()}] Monitoring disabled. Skipping check for ${details.url}`);
+    // Skip processing if the extension is disabled
     return;
   }
 
-  // Basic filtering (existing code)
-  if (!details.ip || !details.url.startsWith('http')) {
+  // Skip checking if no IP address or not an HTTP(S) request
+  if (!details.ip || !details.url.startsWith("http")) {
     return;
   }
 
+  // Extract the domain from the URL for DNS lookups
   let domain;
   try {
     const url = new URL(details.url);
     domain = url.hostname;
-    if (!domain || domain === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(domain)) {
-        return;
+    // Skip checking localhost, IP addresses, or empty domains
+    if (
+      !domain ||
+      domain === "localhost" ||
+      /^\d+\.\d+\.\d+\.\d+$/.test(domain) // Check if domain is actually an IPv4 address
+    ) {
+      return;
     }
   } catch (e) {
-    console.error(`[${new Date().toISOString()}] Error parsing URL: ${details.url}`, e);
+    // Log error if URL parsing fails
+    console.error(
+      `[${new Date().toISOString()}] Error parsing URL: ${details.url}`,
+      e
+    );
     return;
   }
 
+  // Store the IP address that the browser actually connected to
   const ipSeen = details.ip;
-  console.debug(`[${new Date().toISOString()}] Request Completed (Monitoring ON): Domain=${domain}, Connected IP=${ipSeen}, URL=${details.url}`);
+  console.debug(
+    `[${new Date().toISOString()}] Request Completed (Monitoring ON): Domain=${domain}, Connected IP=${ipSeen}, URL=${
+      details.url
+    }`
+  );
 
   try {
-    // 1. Fetch trusted DNS results via DoH (A and AAAA)
+    // Get IPs from trusted DNS over HTTPS provider
     const dohIps = await dohLookup(domain);
-    console.debug(`[${new Date().toISOString()}] DoH Results for ${domain}:`, [...dohIps]);
+    console.debug(`[${new Date().toISOString()}] DoH Results for ${domain}:`, [
+      ...dohIps,
+    ]);
 
+    // Skip if DoH lookup failed or returned no results
     if (dohIps.size === 0) {
-      console.warn(`[${new Date().toISOString()}] DoH lookup failed or returned no IPs for ${domain}. Skipping comparison.`);
+      console.warn(
+        `[${new Date().toISOString()}] DoH lookup failed or returned no IPs for ${domain}. Skipping comparison.`
+      );
       return;
     }
 
-    // 2. Check if connected IP matches exactly or is in a similar range to DoH results
+    // Check if connected IP matches or is similar to DoH results
+    // This uses both exact match and network range comparisons (/16 for IPv4, /48 for IPv6)
     const isConsideredMatch = isIpRelatedToDohSet(ipSeen, dohIps);
-    console.debug(`[${new Date().toISOString()}] Checking ${domain}: Is ${ipSeen} related (exact match or similar range) to DoH set? ${isConsideredMatch}`);
+    console.debug(
+      `[${new Date().toISOString()}] Checking ${domain}: Is ${ipSeen} related (exact match or similar range) to DoH set? ${isConsideredMatch}`
+    );
 
     // isCdnAllowlisted is currently a stub, so its result is not primarily used for alerting logic here.
     // const allowlistedByDomain = isCdnAllowlisted(ipSeen, domain);
 
-    // 3. Trigger notification ONLY IF no relationship was found
-    if (!isConsideredMatch) { // Note: isCdnAllowlisted is effectively ignored for alert logic due to range check taking precedence
+    // Show notification if no match found - this might indicate DNS spoofing
+    if (!isConsideredMatch) {
+      // Create unique notification ID that includes domain, IP and timestamp
       const notificationId = `dns-alert-${domain}-${ipSeen}-${Date.now()}`;
-      const dohIpList = [...dohIps].join(', ') || 'None';
+      // Format the list of IPs from DoH for the message
+      const dohIpList = [...dohIps].join(", ") || "None";
       const message = `Browser connected to ${ipSeen}, but trusted DNS (DoH) resolved to: ${dohIpList}. This might indicate DNS interference.`;
       const title = `DNS Alert: ${domain}`;
 
-      console.warn(`[${new Date().toISOString()}] ALERT Triggered for ${domain}! (IP not in DoH set or similar range)`, {
+      // Log the alert details
+      console.warn(
+        `[${new Date().toISOString()}] ALERT Triggered for ${domain}! (IP not in DoH set or similar range)`,
+        {
           connectedIp: ipSeen,
           dohIpSet: dohIps,
           isConsideredMatch: isConsideredMatch, // Will be false here
-          url: details.url
-      });
+          url: details.url,
+        }
+      );
 
+      // Create browser notification to alert the user
       chrome.notifications.create(notificationId, {
-        type: 'basic',
-        iconUrl: 'icons/icon48.png',
+        type: "basic",
+        iconUrl: "icons/icon48.png",
         title: title,
         message: message,
-        priority: 2
+        priority: 2, // High priority
       });
 
+      // Save the alert to local storage for viewing in the popup
       await storeAlert({
         timestamp: new Date().toISOString(),
         domain: domain,
@@ -95,29 +122,41 @@ async function handleRequestCompleted(details) {
         url: details.url,
       });
     } else {
-       console.debug(`[${new Date().toISOString()}] OK for ${domain}: Connected IP ${ipSeen} matches or is related to DoH set.`);
+      // If connected IP matches one from DoH, everything is normal
+      console.debug(
+        `[${new Date().toISOString()}] OK for ${domain}: Connected IP ${ipSeen} matches or is related to DoH set.`
+      );
     }
-
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] Error processing request for ${domain}:`, error);
+    // Log any errors during processing
+    console.error(
+      `[${new Date().toISOString()}] Error processing request for ${domain}:`,
+      error
+    );
   }
 }
 
-// ... (rest of storeAlert and onStartup listener) ...
+// Stores alert data in Chrome's local storage
+// Maintains a queue of the MAX_ALERTS most recent alerts
 async function storeAlert(alertData) {
   try {
+    // Get existing alerts from storage
     const result = await chrome.storage.local.get({ dnsAlerts: [] });
     let alerts = result.dnsAlerts;
+    // Add new alert to the beginning of the array
     alerts.unshift(alertData);
+    // Limit the number of stored alerts
     if (alerts.length > MAX_ALERTS) {
       alerts = alerts.slice(0, MAX_ALERTS);
     }
+    // Save back to storage
     await chrome.storage.local.set({ dnsAlerts: alerts });
   } catch (error) {
     console.error("Error storing alert:", error);
   }
 }
 
+// Clear any badge text when the extension starts up
 chrome.runtime.onStartup.addListener(() => {
-  chrome.action.setBadgeText({ text: '' });
+  chrome.action.setBadgeText({ text: "" });
 });

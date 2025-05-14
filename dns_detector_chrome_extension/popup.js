@@ -1,104 +1,124 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const alertList = document.getElementById('alert-list');
-  const statusDiv = document.getElementById('status');
-  const clearButton = document.getElementById('clear-alerts-btn');
-  const toggleSwitch = document.getElementById('extension-enabled-toggle');
-  const toggleLabel = document.getElementById('toggle-label');
+// Initialize the popup when DOM is loaded
+document.addEventListener("DOMContentLoaded", () => {
+  // UI element references
+  const alertList = document.getElementById("alert-list");
+  const statusDiv = document.getElementById("status");
+  const clearButton = document.getElementById("clear-alerts-btn");
+  const toggleSwitch = document.getElementById("extension-enabled-toggle");
+  const toggleLabel = document.getElementById("toggle-label");
 
-  // --- Initialize Toggle State ---
+  // Set toggle based on stored state
   chrome.storage.local.get({ extensionEnabled: true }, (result) => {
     toggleSwitch.checked = result.extensionEnabled;
     updateToggleLabel(result.extensionEnabled);
   });
 
-  // --- Toggle Event Listener ---
-  toggleSwitch.addEventListener('change', () => {
+  // Handle toggle changes
+  toggleSwitch.addEventListener("change", () => {
     const isEnabled = toggleSwitch.checked;
     chrome.storage.local.set({ extensionEnabled: isEnabled }, () => {
       updateToggleLabel(isEnabled);
-      console.log(`DNS Integrity Checker monitoring ${isEnabled ? 'Enabled' : 'Disabled'}`);
-      // Optionally, send a message to the background script if immediate action is needed
-      // chrome.runtime.sendMessage({ type: "TOGGLE_MONITORING", enabled: isEnabled });
+      console.log(`Extension turned ${isEnabled ? "ON" : "OFF"}`);
     });
   });
 
+  // Update toggle label text
   function updateToggleLabel(isEnabled) {
-    toggleLabel.textContent = isEnabled ? 'Monitoring Enabled' : 'Monitoring Disabled';
+    toggleLabel.textContent = isEnabled
+      ? "Monitoring Enabled"
+      : "Monitoring Disabled";
   }
 
-  // Load alerts from storage when popup opens
+  // Load alerts when popup opens
   loadAlerts();
 
-  // Add event listener for the clear button
-  clearButton.addEventListener('click', clearAlerts);
+  // Set up clear button
+  clearButton.addEventListener("click", clearAlerts);
 
-  // ... (rest of your existing loadAlerts, createAlertListItem, clearAlerts, escapeHtml functions) ...
+  // Fetch and display alerts from storage
   async function loadAlerts() {
     try {
       const result = await chrome.storage.local.get({ dnsAlerts: [] });
       const alerts = result.dnsAlerts;
 
-      alertList.innerHTML = ''; // Clear previous list
+      // Clear existing alerts
+      alertList.innerHTML = "";
 
       if (alerts && alerts.length > 0) {
-        statusDiv.textContent = ''; // Hide loading/empty message
-        alerts.forEach(alert => {
+        statusDiv.textContent = "";
+        alerts.forEach((alert) => {
           const listItem = createAlertListItem(alert);
           alertList.appendChild(listItem);
         });
       } else {
-        statusDiv.textContent = 'No alerts recorded recently.';
+        statusDiv.textContent = "No alerts recorded recently.";
       }
     } catch (error) {
-      console.error('Error loading alerts:', error);
-      statusDiv.textContent = 'Error loading alerts.';
+      console.error("Error loading alerts:", error);
+      statusDiv.textContent = "Error loading alerts.";
     }
   }
 
+  // Create alert list item with timestamp and details
   function createAlertListItem(alert) {
-    const item = document.createElement('li');
-    item.className = 'alert-item';
+    const item = document.createElement("li");
+    item.className = "alert-item";
 
     const time = new Date(alert.timestamp).toLocaleString();
-    const domainStrong = `<strong>${escapeHtml(alert.domain)}</strong>`;
-    const connectedIpEm = `<em>${escapeHtml(alert.connectedIp)}</em>`;
-    const dohIpsFormatted = alert.dohIps.length > 0 ? escapeHtml(alert.dohIps.join(', ')) : 'None';
 
+    // Populate HTML with alert details
     item.innerHTML = `
       <div class="alert-time">${escapeHtml(time)}</div>
-      <div class="alert-domain">Domain: ${domainStrong}</div>
-      <div class="alert-ip">Connected IP: ${connectedIpEm} (Suspicious)</div>
-      <div class="alert-doh">DoH IPs: ${dohIpsFormatted}</div>
-      ${alert.url ? `<div class="alert-url">URL: <a href="${escapeHtml(alert.url)}" target="_blank" title="${escapeHtml(alert.url)}">Link</a></div>` : ''}
+      <div class="alert-domain">Domain: <strong>${escapeHtml(
+        alert.domain
+      )}</strong></div>
+      <div class="alert-ip">Connected IP: <em>${escapeHtml(
+        alert.connectedIp
+      )}</em> (Suspicious)</div>
+      <div class="alert-doh">DoH IPs: ${escapeHtml(
+        alert.dohIps.join(", ") || "None"
+      )}</div>
+      ${
+        alert.url
+          ? `<div class="alert-url">URL: <a href="${escapeHtml(
+              alert.url
+            )}" target="_blank" title="${escapeHtml(alert.url)}">Link</a></div>`
+          : ""
+      }
     `;
-    const urlLink = item.querySelector('.alert-url a');
+
+    // Truncate long URLs
+    const urlLink = item.querySelector(".alert-url a");
     if (urlLink && alert.url.length > 60) {
-        urlLink.textContent = escapeHtml(alert.url.substring(0, 60)) + '...';
-    } else if(urlLink) {
-        urlLink.textContent = escapeHtml(alert.url);
+      urlLink.textContent = escapeHtml(alert.url.substring(0, 60)) + "...";
+    } else if (urlLink) {
+      urlLink.textContent = escapeHtml(alert.url);
     }
+
     return item;
   }
 
+  // Clear all alerts from storage and UI
   async function clearAlerts() {
     try {
-      await chrome.storage.local.remove('dnsAlerts');
-      console.log('Cleared stored DNS alerts.');
-      alertList.innerHTML = ''; // Clear the list in the UI
-      statusDiv.textContent = 'Alerts cleared.';
+      await chrome.storage.local.remove("dnsAlerts");
+      console.log("Cleared alerts.");
+      alertList.innerHTML = "";
+      statusDiv.textContent = "Alerts cleared.";
     } catch (error) {
-      console.error('Error clearing alerts:', error);
-      statusDiv.textContent = 'Error clearing alerts.';
+      console.error("Error clearing alerts:", error);
+      statusDiv.textContent = "Error clearing alerts.";
     }
   }
 
-   function escapeHtml(unsafe) {
-    if (!unsafe) return '';
+  // Prevent XSS by escaping HTML
+  function escapeHtml(unsafe) {
+    if (!unsafe) return "";
     return unsafe
-         .replace(/&/g, "&")
-         .replace(/</g, "<")
-         .replace(/>/g, ">")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#39;");
- }
+      .replace(/&/g, "&")
+      .replace(/</g, "<")
+      .replace(/>/g, ">")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
 });
