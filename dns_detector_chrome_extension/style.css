@@ -207,3 +207,119 @@ body {
   .slider.round:before {
     border-radius: 50%;
   }
+
+  .separator {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 20px 0;
+  }
+  
+  h2 {
+    font-size: 15px;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+  
+  .allowlist-manager {
+    display: flex;
+    flex-direction: column; /* This stacks flex items vertically */
+    margin-bottom: 10px;
+    gap: 8px; /* This will now create vertical space between input and button */
+  }
+  
+  #allowlist-domain-input {
+    flex-grow: 1; /* This is fine, will take full width available */
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    box-sizing: border-box; /* Add this to ensure padding/border don't add to width */
+  }
+  
+  .small-button { /* This is your "Add to Allowlist" button */
+      padding: 8px 12px;
+      font-size: 13px;
+      /* flex-shrink: 0; */ /* Not strictly needed in column layout */
+      width: 100%; /* Make button take full width of its container */
+      box-sizing: border-box; /* Add this */
+      margin-top: 0; /* Remove any top margin if it was from the general .button style */
+  }
+
+  /* Styles for Collapsible Section */
+.collapsible-section {
+  margin-top: 15px; /* Add some space above the section */
+}
+
+.collapsible-summary {
+  cursor: pointer;
+  outline: none; /* Remove default focus outline on some browsers */
+  padding: 5px 0; /* Add some padding to the summary click area */
+  display: block; /* Makes the summary take full width for easier clicking */
+}
+
+.collapsible-summary h2 {
+  display: inline-block; /* Keep h2 styling but allow carrot to be next to it */
+  margin-bottom: 5px; /* Adjust h2 margin if needed */
+  border-bottom: none; /* Remove border from h2 if it's inside summary */
+}
+
+.collapsible-summary::marker, /* Hide default marker for Chrome/Safari */
+.collapsible-summary::-webkit-details-marker { /* Hide default marker for Chrome/Safari */
+  display: none;
+}
+
+.collapsible-summary::before { /* Custom carrot icon */
+  content: '▶'; /* Right-pointing triangle for collapsed state */
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 0.8em;
+  transition: transform 0.2s ease-in-out;
+}
+
+.collapsible-section[open] > .collapsible-summary::before {
+  transform: rotate(90deg); /* Down-pointing triangle for expanded state */
+}
+
+.collapsible-content {
+  padding-left: 20px; /* Indent the content of the collapsible section */
+  border-left: 1px solid #eee;
+  margin-top: 5px;
+}
+
+
+/* Styles for Allowlist Items and Remove Button */
+.custom-allowlist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-bottom: 1px solid #eee;
+}
+.custom-allowlist-item:last-child {
+  border-bottom: none;
+}
+
+.custom-allowlist-item span { /* For the domain text */
+    word-break: break-all;
+    margin-right: 10px; /* ADDED SPACE between domain and X button */
+    flex-grow: 1; /* Allow domain text to take available space */
+}
+
+.remove-allowlist-btn {
+  background-color: transparent; /* Make background transparent */
+  color: #d93025; /* Red color for X */
+  border: none; /* Remove border */
+  border-radius: 50%; /* Make it roundish if desired, or keep as is */
+  padding: 4px 6px; /* Adjust padding for the X */
+  font-size: 1.1em;  /* Make X slightly larger */
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1; /* Ensure X is centered vertically */
+  flex-shrink: 0; /* Prevent button from shrinking */
+}
+.remove-allowlist-btn:hover {
+  background-color: #fce8e6; /* Light red background on hover */
+  color: #c5221f; /* Darker red on hover */
+}

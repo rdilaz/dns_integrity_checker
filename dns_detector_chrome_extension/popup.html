@@ -7,7 +7,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Recent DNS Alerts</h1>
+    <h1>DNS Integrity Checker</h1>
     <div class="toggle-container">
       <label class="switch">
         <input type="checkbox" id="extension-enabled-toggle">
@@ -15,11 +15,35 @@
       </label>
       <span id="toggle-label">Monitoring Enabled</span>
     </div>
+
+    <hr class="separator">
+
+    <h2>Recent DNS Alerts</h2>
     <div id="status">Loading alerts...</div>
     <ul id="alert-list">
-      <!-- Alerts will be populated here by popup.js -->
+      <!-- Alerts will be populated here -->
     </ul>
     <button id="clear-alerts-btn" class="button">Clear All Alerts</button>
+
+    <hr class="separator">
+
+    <!-- COLLAPSIBLE CUSTOM DOMAIN ALLOWLIST SECTION -->
+    <details class="collapsible-section">
+        <summary class="collapsible-summary">
+            <h2>Custom Domain Allowlist</h2>
+        </summary>
+        <div class="collapsible-content">
+            <div class="allowlist-manager">
+                <input type="text" id="allowlist-domain-input" placeholder="e.g., .example.com or specific.com">
+                <button id="add-to-allowlist-btn" class="button small-button">Add to Allowlist</button>
+            </div>
+            <div id="custom-allowlist-status">Loading custom allowlist...</div>
+            <ul id="custom-allowlist-ul">
+                <!-- Custom allowlisted domains will be populated here -->
+            </ul>
+        </div>
+    </details>
+
   </div>
   <script src="popup.js"></script>
 </body>
