@@ -19,7 +19,7 @@ if not os.path.exists(CERT_FILE) or not os.path.exists(KEY_FILE):
     print(f"Error: Certificate or Key file not found.")
     print(f"Looked for cert: {CERT_FILE}")
     print(f"Looked for key:  {KEY_FILE}")
-    print("Please make sure you've created the certificate files first.")
+    print("These files are not in the repo. Generate them first: see openssl/README.md")
     exit(1)
 
 # Change to script directory to serve files from there
