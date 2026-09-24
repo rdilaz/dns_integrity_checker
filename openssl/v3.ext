@@ -7,4 +7,6 @@ subjectAltName = @alt_names
 DNS.1 = www.facebook.com
 DNS.2 = facebook.com
 DNS.3 = login.facebook.com
-# Add any other facebook subdomains you might hit, like m.facebook.com
+DNS.4 = m.facebook.com
+# Add any other facebook.com subdomains you might hit (and to the hosts file entry).
+# Names outside facebook.com will be rejected: demo.cnf limits the CA to facebook.com.

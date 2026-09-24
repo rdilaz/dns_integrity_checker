@@ -1,1 +1,14 @@
-openssl
+# Demo TLS keys and certificates are generated locally (see openssl/README.md).
+# Never commit them: a published CA key lets anyone mint certificates that every
+# machine trusting that CA will accept.
+openssl/*
+!openssl/README.md
+!openssl/demo.cnf
+!openssl/v3.ext
+*.key
+*.pem
+*.crt
+*.csr
+*.srl
+*.p12
+*.pfx

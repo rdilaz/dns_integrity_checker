@@ -31,6 +31,8 @@ This setup allows you to redirect a real HTTPS site (like `www.facebook.com`) to
 
 **⚠️ Security Warning:** This process involves creating and trusting a custom Root Certificate Authority (CA). This temporarily lowers your system's security for connections to the spoofed domain. **It is CRITICAL to remove the custom Root CA from your system's trust store after completing the demo.**
 
+**The certificates and keys are not in this repository.** You generate a fresh, short-lived CA and leaf certificate yourself (step 1), and `.gitignore` keeps them out of git. If you ever trusted the CA that used to be committed under `openssl/` (it appears as **`ryo`** / `fakeguy`, not "My Demo Root CA"), its private key is public: remove it from your trust store now using [openssl/README.md](openssl/README.md#demo-certificates-generate-locally-never-commit).
+
 ### Prerequisites
 
 *   **Git:** Required for cloning/managing the project.
@@ -44,59 +46,33 @@ This setup allows you to redirect a real HTTPS site (like `www.facebook.com`) to
 
 **(Perform these steps inside the project's root directory in your terminal/command prompt)**
 
-1.  **Generate Certificates:**
-    *   Navigate to the `openssl` (or `mitm_certs`) directory within the project.
+1.  **Generate Certificates (required, nothing is shipped in the repo):**
+    *   Follow [openssl/README.md](openssl/README.md) for details and troubleshooting. In short, from the project root (the `openssl` commands are the same in bash and PowerShell):
         ```bash
         cd openssl
-        ```
-    *   **Windows Only - Set OpenSSL Config Path:** Find your `openssl.cnf` file (e.g., in `C:\Program Files\OpenSSL-Win64\share`). Set the environment variable *before* running openssl commands:
-        ```powershell
-        # In PowerShell (replace with your actual path)
-        $env:OPENSSL_CONF="C:\Program Files\OpenSSL-Win64\share\openssl.cnf"
-        ```
-        ```cmd
-        # In CMD (replace with your actual path)
-        set OPENSSL_CONF=C:\Program Files\OpenSSL-Win64\share\openssl.cnf
-        ```
-    *   Generate Root CA key:
-        ```bash
         openssl genrsa -out MyDemoRootCA.key 2048
-        ```
-    *   Generate Root CA certificate (`.pem` file): (Enter dummy info, use "My Demo Root CA" for Common Name)
-        ```bash
-        openssl req -x509 -new -nodes -key MyDemoRootCA.key -sha256 -days 1024 -out MyDemoRootCA.pem
-        ```
-    *   Generate Fake Server key: (Using `fakefacebook` as example)
-        ```bash
+        openssl req -x509 -new -config demo.cnf -key MyDemoRootCA.key -sha256 -days 30 -out MyDemoRootCA.pem
         openssl genrsa -out fakefacebook.key 2048
+        openssl req -new -config demo.cnf -key fakefacebook.key -subj "/CN=www.facebook.com" -out fakefacebook.csr
+        openssl x509 -req -in fakefacebook.csr -CA MyDemoRootCA.pem -CAkey MyDemoRootCA.key -CAcreateserial -out fakefacebook.crt -days 30 -sha256 -extfile v3.ext
+        openssl verify -CAfile MyDemoRootCA.pem fakefacebook.crt
         ```
-    *   Create CSR for Fake Server: (**Crucially, use `www.facebook.com` for Common Name**)
+    *   This creates a root CA named **"DNS Integrity Checker Demo CA"** that is only valid for 30 days and can only vouch for `facebook.com` names (see `demo.cnf`), and a leaf certificate `fakefacebook.crt` for `www.facebook.com`, `facebook.com`, `login.facebook.com` and `m.facebook.com` (see `v3.ext`). The fake server loads `openssl/fakefacebook.crt` and `openssl/fakefacebook.key`, so keep those names.
+    *   Recommended: delete the CA private key now that the leaf is signed, then go back to the project root:
         ```bash
-        openssl req -new -key fakefacebook.key -out fakefacebook.csr
+        # bash
+        rm -f MyDemoRootCA.key MyDemoRootCA.srl fakefacebook.csr
+        cd ..
         ```
-    *   Ensure `v3.ext` file exists in this directory with correct SANs (Subject Alternative Names):
-        ```ini
-        # v3.ext content:
-        authorityKeyIdentifier=keyid,issuer
-        basicConstraints=CA:FALSE
-        keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
-        subjectAltName = @alt_names
-
-        [alt_names]
-        DNS.1 = www.facebook.com
-        DNS.2 = facebook.com
-        DNS.3 = login.facebook.com
-        # Add other relevant subdomains if needed
+        ```powershell
+        # PowerShell
+        Remove-Item MyDemoRootCA.key, MyDemoRootCA.srl, fakefacebook.csr
+        cd ..
         ```
-    *   Sign the Server CSR with your Root CA:
-        ```bash
-        openssl x509 -req -in fakefacebook.csr -CA MyDemoRootCA.pem -CAkey MyDemoRootCA.key -CAcreateserial -out fakefacebook.crt -days 500 -sha256 -extfile v3.ext
-        ```
-    *   Navigate back to the project root directory: `cd ..`
 
 2.  **Install Your Root CA (`MyDemoRootCA.pem`) as Trusted:**
     *   **Windows:** Double-click `openssl/MyDemoRootCA.pem`, Install Certificate -> Current User -> Place in store -> Browse -> **Trusted Root Certification Authorities** -> OK -> Next -> Finish. Acknowledge warnings.
-    *   **macOS:** Open Keychain Access.app -> System keychain -> Drag `openssl/MyDemoRootCA.pem` into certificates -> Find "My Demo Root CA" -> Double-click -> Trust -> Set "When using..." to "**Always Trust**" -> Close (enter password if needed).
+    *   **macOS:** Open Keychain Access.app -> System keychain -> Drag `openssl/MyDemoRootCA.pem` into certificates -> Find "DNS Integrity Checker Demo CA" -> Double-click -> Trust -> Set "When using..." to "**Always Trust**" -> Close (enter password if needed).
     *   **Linux (Debian/Ubuntu):** `sudo cp openssl/MyDemoRootCA.pem /usr/local/share/ca-certificates/MyDemoRootCA.crt && sudo update-ca-certificates`. Import into Firefox manually if needed.
     *   **Restart your browser completely** after installing the certificate.
 
@@ -121,9 +97,9 @@ This setup allows you to redirect a real HTTPS site (like `www.facebook.com`) to
     *   Run the Python HTTPS server script (using `sudo`/admin if using port 443):
         ```bash
         # If using port 443
-        sudo python3 serve_fake_fb_https.py
-        # Or (Windows Admin terminal): python3 .\serve_fake_fb_https.py
-        # Or (If using port like 8443): python3 serve_fake_fb_https.py
+        sudo python3 serve_fake_page.py
+        # Or (Windows Admin terminal): python3 .\serve_fake_page.py
+        # Or (If you change PORT in the script to e.g. 8443): python3 serve_fake_page.py
         ```
     *   Keep this terminal running.
 
@@ -134,7 +110,7 @@ This setup allows you to redirect a real HTTPS site (like `www.facebook.com`) to
 3.  **Visit Spoofed Site:** Open a new tab and navigate to `https://www.facebook.com` (or `https://www.facebook.com/login.php`).
 4.  **Observe:**
     *   The browser should connect to your local Python HTTPS server (running on `127.0.0.1`).
-    *   Because you installed and trusted `MyDemoRootCA.pem`, the browser should trust the `fakefacebook.crt` presented by the server. You should see your fake Facebook page load over HTTPS (check the padlock details - it should show verified by "My Demo Root CA").
+    *   Because you installed and trusted `MyDemoRootCA.pem`, the browser should trust the `fakefacebook.crt` presented by the server. You should see your fake Facebook page load over HTTPS (check the padlock details - it should show verified by "DNS Integrity Checker Demo CA").
     *   The Python server terminal will show successful HTTPS requests (e.g., `GET / HTTP/1.1" 200 -`).
     *   The **DNS Integrity Checker** extension's Service Worker console will log the connection (`Connected IP=127.0.0.1`). It will perform a DoH lookup for `www.facebook.com` (getting real Facebook IPs). The range check between `127.0.0.1` and real Facebook IPs will fail (`isConsideredMatch: false`).
     *   An **Alert** notification should appear, and the event should be logged in the extension's popup.
@@ -144,10 +120,11 @@ This setup allows you to redirect a real HTTPS site (like `www.facebook.com`) to
 1.  **Stop the Fake Server:** Press `Ctrl+C` in its terminal.
 2.  **Remove Hosts File Entry:** Edit your hosts file (admin/sudo) and delete or comment out the `127.0.0.1 ...facebook.com...` line. Save the file.
 3.  **Flush DNS Cache:** Run the flush command for your OS again.
-4.  **Uninstall/Remove the Custom Root CA:** This is essential!
-    *   **Windows:** Control Panel -> Internet Options -> Content -> Certificates -> Trusted Root Certification Authorities -> Find "My Demo Root CA" -> Remove.
-    *   **macOS:** Keychain Access -> System -> Certificates -> Find "My Demo Root CA" -> Right-click/Delete.
-    *   **Linux:** `sudo rm /usr/local/share/ca-certificates/MyDemoRootCA.crt && sudo update-ca-certificates`. Remove from Firefox store if added.
-5.  **Restart your browser.**
+4.  **Uninstall/Remove the Custom Root CA:** This is essential! Full steps (including Chrome and Firefox) are in [openssl/README.md](openssl/README.md#remove-the-ca-after-the-demo).
+    *   **Windows:** `certutil -user -delstore Root "DNS Integrity Checker Demo CA"` (run `certutil -delstore Root "DNS Integrity Checker Demo CA"` in an Administrator terminal if you installed it for the whole machine), or `certmgr.msc` -> Trusted Root Certification Authorities -> Certificates -> "DNS Integrity Checker Demo CA" -> Delete.
+    *   **macOS:** Keychain Access -> System -> Certificates -> Find "DNS Integrity Checker Demo CA" -> Delete, or `sudo security delete-certificate -t -c "DNS Integrity Checker Demo CA" /Library/Keychains/System.keychain`.
+    *   **Linux:** `sudo rm /usr/local/share/ca-certificates/MyDemoRootCA.crt && sudo update-ca-certificates --fresh`. Remove it from Chrome's/Firefox's own store if you imported it there.
+5.  **Delete the generated keys and certificates:** `rm -f openssl/MyDemoRootCA.* openssl/fakefacebook.*` (PowerShell: `Remove-Item openssl\MyDemoRootCA.*, openssl\fakefacebook.*`). Never commit them.
+6.  **Restart your browser.**
 
 ---

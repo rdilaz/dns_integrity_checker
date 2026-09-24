@@ -1,0 +1,25 @@
+# OpenSSL config for the throwaway demo root CA. See README.md in this folder.
+# Used by both `openssl req` commands in README.md: the CA takes its name and
+# extensions from here; the leaf CSR overrides the name with -subj.
+#
+# Self-contained on purpose, so the commands do not depend on the system
+# openssl.cnf (which is often missing or misconfigured on Windows).
+
+[ req ]
+distinguished_name = dn
+x509_extensions    = v3_ca
+prompt             = no
+
+[ dn ]
+# This is the name you will look for when removing the CA from your trust store.
+CN = DNS Integrity Checker Demo CA
+O  = dns_integrity_checker demo - REMOVE AFTER DEMO
+
+[ v3_ca ]
+basicConstraints       = critical, CA:TRUE, pathlen:0
+keyUsage               = critical, keyCertSign, cRLSign
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always
+# Limit what this CA can vouch for: only facebook.com and its subdomains.
+# Even if this CA's key leaks, it cannot be used to impersonate any other site.
+nameConstraints        = critical, permitted;DNS:facebook.com
