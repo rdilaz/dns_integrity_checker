@@ -1,1 +1,7 @@
 openssl
+# Demo certificates and keys: generate your own, never commit them
+openssl/*.key
+openssl/*.pem
+openssl/*.crt
+openssl/*.csr
+openssl/*.srl

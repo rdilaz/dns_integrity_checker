@@ -1,16 +1,15 @@
 # DNS Integrity Checker - Chrome Extension
 
-This Chrome extension monitors websites you visit in real-time. If the IP address your browser connects to for a domain is not found in the list of valid IPs obtained via Google DoH (and isn't recognized as a common CDN IP), it triggers a browser notification and logs the event.
+This Chrome extension monitors websites you visit in real-time. If the IP address your browser connects to for a domain is not found in the list of valid IPs obtained via Google DoH (and isn't in the same /16 IPv4 or /48 IPv6 range, or on the allowlist), it triggers a browser notification and logs the event.
 
 ## Installation (Loading Unpacked Extension)
 
-1.  **Download/Clone:** Make sure you have the `dns_detector_chrome` directory containing `manifest.json`, `background.js`, `helpers.js`, `popup.html`, `popup.js`, `style.css`, and the `icons/` folder.
-2.  **Create Icons:** Create placeholder icons named `icon16.png`, `icon48.png`, and `icon128.png` inside the `icons/` directory. Simple colored squares will work for testing.
-3.  **Open Chrome Extensions:** Open Google Chrome, navigate to `chrome://extensions`.
-4.  **Enable Developer Mode:** Ensure the "Developer mode" toggle switch (usually in the top-right corner) is turned ON.
-5.  **Load Unpacked:** Click the "Load unpacked" button.
-6.  **Select Directory:** In the file dialog, navigate to and select the `dns_detector_chrome` directory (the one containing `manifest.json`). Click "Select Folder".
-7.  **Verify:** The "DNS Integrity Checker" extension should now appear in your list of extensions. Ensure there are no errors displayed on its card.
+1.  **Download/Clone:** Make sure you have the `dns_detector_chrome_extension` directory containing `manifest.json`, `background.js`, `helpers.js`, `popup.html`, `popup.js`, `style.css`, and the `icons/` folder.
+2.  **Open Chrome Extensions:** Open Google Chrome, navigate to `chrome://extensions`.
+3.  **Enable Developer Mode:** Ensure the "Developer mode" toggle switch (usually in the top-right corner) is turned ON.
+4.  **Load Unpacked:** Click the "Load unpacked" button.
+5.  **Select Directory:** In the file dialog, navigate to and select the `dns_detector_chrome_extension` directory (the one containing `manifest.json`). Click "Select Folder".
+6.  **Verify:** The "DNS Integrity Checker" extension should now appear in your list of extensions. Ensure there are no errors displayed on its card.
 
 ## Testing DNS Spoofing
 
