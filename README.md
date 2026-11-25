@@ -14,7 +14,8 @@ Monitors websites you visit in real-time. If the IP address your browser connect
 *   Compares the connected IP against DoH results using exact matching and network range heuristics (/16 for IPv4, /48 for IPv6) to reduce false positives from CDNs.
 *   Shows a Chrome notification on significant mismatch.
 *   Stores recent alerts in `chrome.storage.local`.
-*   Provides a popup UI to view recent alerts and toggle monitoring On/Off.
+*   Skips domains on an allowlist: a built-in default list plus your own entries, which you add and remove in the popup.
+*   Provides a popup UI to view recent alerts, toggle monitoring On/Off, and manage the custom allowlist.
 
 ### Installation (Loading Unpacked Extension)
 
@@ -45,7 +46,7 @@ This setup allows you to redirect a real HTTPS site (like `www.facebook.com`) to
 **(Perform these steps inside the project's root directory in your terminal/command prompt)**
 
 1.  **Generate Certificates:**
-    *   Navigate to the `openssl` (or `mitm_certs`) directory within the project.
+    *   Navigate to the `openssl` directory within the project. Always generate fresh keys; never trust a CA whose private key you did not create yourself.
         ```bash
         cd openssl
         ```
@@ -121,9 +122,9 @@ This setup allows you to redirect a real HTTPS site (like `www.facebook.com`) to
     *   Run the Python HTTPS server script (using `sudo`/admin if using port 443):
         ```bash
         # If using port 443
-        sudo python3 serve_fake_fb_https.py
-        # Or (Windows Admin terminal): python3 .\serve_fake_fb_https.py
-        # Or (If using port like 8443): python3 serve_fake_fb_https.py
+        sudo python3 serve_fake_page.py
+        # Or (Windows Admin terminal): python3 .\serve_fake_page.py
+        # Or edit PORT at the top of serve_fake_page.py (e.g. 8443) to run without admin rights
         ```
     *   Keep this terminal running.
 
